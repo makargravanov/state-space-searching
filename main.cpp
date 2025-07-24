@@ -1,6 +1,8 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/breadth_first_search.hpp>
+#include <boost/functional/hash.hpp>
 #include <iostream>
+#include <unordered_map>
 #include <utility>
 #include <map>
 #include <queue>
@@ -11,6 +13,23 @@
 
 using State = std::pair<int, int>;
 using Graph = boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS>;
+
+// Хеш-функция для State (std::pair<int, int>)
+struct StateHash {
+    size_t operator()(const State& p) const {
+        size_t seed = 0;
+        boost::hash_combine(seed, p.first);
+        boost::hash_combine(seed, p.second);
+        return seed;
+    }
+};
+
+// Хеш-функция для Graph::vertex_descriptor (обычно unsigned long)
+struct VertexDescriptorHash {
+    size_t operator()(const Graph::vertex_descriptor& v) const {
+        return std::hash<Graph::vertex_descriptor>()(v);
+    }
+};
 
 auto generateNextStates(const State& current,
                         int capacityA,
@@ -35,15 +54,15 @@ auto generateNextStates(const State& current,
 
 auto bfs(Graph& graph,
          Graph::vertex_descriptor startVertex,
-         std::map<Graph::vertex_descriptor, State>& vertexToState,
-         std::map<State, Graph::vertex_descriptor>& stateToVertex,
+         std::unordered_map<Graph::vertex_descriptor, State, VertexDescriptorHash>& vertexToState,
+         std::unordered_map<State, Graph::vertex_descriptor, StateHash>& stateToVertex,
          int capacityA, int capacityB,
          int targetVolume) -> std::pair<bool, std::vector<State>> {
 
     std::queue<Graph::vertex_descriptor> queue;
     queue.push(startVertex);
 
-    std::map<Graph::vertex_descriptor, Graph::vertex_descriptor> parent;
+    std::unordered_map<Graph::vertex_descriptor, Graph::vertex_descriptor, VertexDescriptorHash> parent;
     parent[startVertex] = boost::graph_traits<Graph>::null_vertex();
 
     bool pathFound = false;
@@ -115,8 +134,8 @@ auto main() -> int {
     
     State initial(0, 0);
     Graph graph;
-    std::map<State, Graph::vertex_descriptor> stateToVertex;
-    std::map<Graph::vertex_descriptor, State> vertexToState;
+    std::unordered_map<State, Graph::vertex_descriptor, StateHash> stateToVertex;
+    std::unordered_map<Graph::vertex_descriptor, State, VertexDescriptorHash> vertexToState;
 
     Graph::vertex_descriptor startVertex = boost::add_vertex(graph);
     stateToVertex[initial] = startVertex;
