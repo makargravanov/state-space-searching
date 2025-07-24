@@ -4,7 +4,6 @@
 #include <iostream>
 #include <unordered_map>
 #include <utility>
-#include <map>
 #include <queue>
 #include <vector>
 #include <chrono>
@@ -14,7 +13,6 @@
 using State = std::pair<int, int>;
 using Graph = boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS>;
 
-// Хеш-функция для State (std::pair<int, int>)
 struct StateHash {
     size_t operator()(const State& p) const {
         size_t seed = 0;
@@ -24,14 +22,13 @@ struct StateHash {
     }
 };
 
-// Хеш-функция для Graph::vertex_descriptor (обычно unsigned long)
 struct VertexDescriptorHash {
     size_t operator()(const Graph::vertex_descriptor& v) const {
         return std::hash<Graph::vertex_descriptor>()(v);
     }
 };
 
-auto generateNextStates(const State& current,
+inline auto generateNextStates(const State& current,
                         int capacityA,
                         int capacityB) -> std::vector<State> {
     int a = current.first;
@@ -52,7 +49,7 @@ auto generateNextStates(const State& current,
     return nextStates;
 }
 
-auto bfs(Graph& graph,
+inline auto bfs(Graph& graph,
          Graph::vertex_descriptor startVertex,
          std::unordered_map<Graph::vertex_descriptor, State, VertexDescriptorHash>& vertexToState,
          std::unordered_map<State, Graph::vertex_descriptor, StateHash>& stateToVertex,
@@ -63,6 +60,7 @@ auto bfs(Graph& graph,
     queue.push(startVertex);
 
     std::unordered_map<Graph::vertex_descriptor, Graph::vertex_descriptor, VertexDescriptorHash> parent;
+    
     parent[startVertex] = boost::graph_traits<Graph>::null_vertex();
 
     bool pathFound = false;
@@ -79,8 +77,8 @@ auto bfs(Graph& graph,
             break;
         }
 
-        std::vector<State> nextStates = generateNextStates(
-                                 currentState,
+        std::vector<State> nextStates = 
+            generateNextStates(currentState,
                                capacityA,
                                capacityB);
 
