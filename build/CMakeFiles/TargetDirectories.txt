@@ -1,0 +1,3 @@
+/home/alex/cpp-projects/novsu/labs/ai-systems/lab1-state-space-searching/build/CMakeFiles/main.dir
+/home/alex/cpp-projects/novsu/labs/ai-systems/lab1-state-space-searching/build/CMakeFiles/edit_cache.dir
+/home/alex/cpp-projects/novsu/labs/ai-systems/lab1-state-space-searching/build/CMakeFiles/rebuild_cache.dir

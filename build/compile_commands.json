@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/home/alex/cpp-projects/novsu/labs/ai-systems/lab1-state-space-searching/build",
+  "command": "/usr/bin/c++ -DBOOST_GRAPH_DYN_LINK -DBOOST_GRAPH_NO_LIB -DBOOST_SYSTEM_DYN_LINK -DBOOST_SYSTEM_NO_LIB  -std=gnu++23 -O3 -mavx -fno-exceptions -fno-rtti -funroll-loops -o CMakeFiles/main.dir/main.cpp.o -c /home/alex/cpp-projects/novsu/labs/ai-systems/lab1-state-space-searching/main.cpp",
+  "file": "/home/alex/cpp-projects/novsu/labs/ai-systems/lab1-state-space-searching/main.cpp",
+  "output": "CMakeFiles/main.dir/main.cpp.o"
+}
+]
