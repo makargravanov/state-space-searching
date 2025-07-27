@@ -9,6 +9,10 @@ find_package(Boost REQUIRED COMPONENTS system graph)
 
 add_executable(main 
     main.cpp
+    types.hpp
+    common_functions.hpp
+    bfs.hpp
+    ucs.hpp
 )
 target_compile_options(main PRIVATE 
     -O3
