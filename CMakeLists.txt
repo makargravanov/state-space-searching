@@ -12,9 +12,7 @@ add_executable(main
 )
 target_compile_options(main PRIVATE 
     -O3
-    -mavx
-    -fno-exceptions 
-    -fno-rtti 
+    -mavx 
     -funroll-loops )
 
 target_link_libraries(main PRIVATE ${Boost_LIBRARIES})

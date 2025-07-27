@@ -1,6 +1,9 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/breadth_first_search.hpp>
 #include <boost/functional/hash.hpp>
+#include <fstream>
+#include <boost/graph/graphviz.hpp>
+#include <cstdint>
 #include <iostream>
 #include <unordered_map>
 #include <utility>
@@ -28,13 +31,26 @@ struct VertexDescriptorHash {
     }
 };
 
+struct VertexWriter {
+    const std::unordered_map<Graph::vertex_descriptor, State, VertexDescriptorHash>& vertexToState;
+    template <typename Vertex>
+    void operator()(std::ostream& out, const Vertex& v) const {
+        auto it = vertexToState.find(v);
+        if (it != vertexToState.end()) {
+            out << "[label=\"(" << it->second.first << "," << it->second.second << ")\"]";
+        } else {
+            out << "[label=\"?\"]";
+        }
+    }
+};
+
 inline auto generateNextStates(const State& current,
                         int capacityA,
-                        int capacityB) -> std::vector<State> {
+                        int capacityB,
+                        std::vector<State>& nextStates) -> void {
     int a = current.first;
     int b = current.second;
-    std::vector<State> nextStates;
-
+    nextStates.clear();
     nextStates.emplace_back(capacityA, b);
     nextStates.emplace_back(a, capacityB);
     nextStates.emplace_back(0, b);
@@ -46,7 +62,6 @@ inline auto generateNextStates(const State& current,
     transfer = std::min(b, capacityA - a);
     nextStates.emplace_back(a + transfer, b - transfer);
 
-    return nextStates;
 }
 
 inline auto bfs(Graph& graph,
@@ -54,7 +69,7 @@ inline auto bfs(Graph& graph,
          std::unordered_map<Graph::vertex_descriptor, State, VertexDescriptorHash>& vertexToState,
          std::unordered_map<State, Graph::vertex_descriptor, StateHash>& stateToVertex,
          int capacityA, int capacityB,
-         int targetVolume) -> std::pair<bool, std::vector<State>> {
+         int targetVolume) -> std::tuple<bool, std::vector<State>, uint32_t> {
 
     std::queue<Graph::vertex_descriptor> queue;
     queue.push(startVertex);
@@ -66,9 +81,16 @@ inline auto bfs(Graph& graph,
     bool pathFound = false;
     Graph::vertex_descriptor currentVertex;
 
+    std::vector<State> nextStates;
+    nextStates.reserve(6);
+    
+    uint32_t visitedNodes = 0;
+
     while (!queue.empty() && !pathFound) {
         currentVertex = queue.front();
         queue.pop();
+        
+        visitedNodes++;
 
         State currentState = vertexToState[currentVertex];
 
@@ -76,11 +98,8 @@ inline auto bfs(Graph& graph,
             pathFound = true;
             break;
         }
-
-        std::vector<State> nextStates = 
-            generateNextStates(currentState,
-                               capacityA,
-                               capacityB);
+ 
+        generateNextStates(currentState, capacityA, capacityB, nextStates);
 
         for (const auto& nextState : nextStates) {
             if (stateToVertex.find(nextState) == stateToVertex.end()) {
@@ -107,8 +126,7 @@ inline auto bfs(Graph& graph,
         std::reverse(path.begin(), path.end());
     }
 
-    return {pathFound, path};
-}
+    return {pathFound, path, visitedNodes}; }
 
 auto main() -> int {
     int capacityA    = 4;
@@ -125,12 +143,12 @@ auto main() -> int {
     std::print("Логи (y/n): ");
     char logc = 'n';
     std::cin >> logc;
-    if(logc == 'y'){
+    if(logc == 'y') {
         log = true;
     }
     std::println();
     
-    State initial(0, 0);
+    State initial(capacityA, 0);
     Graph graph;
     std::unordered_map<State, Graph::vertex_descriptor, StateHash> stateToVertex;
     std::unordered_map<Graph::vertex_descriptor, State, VertexDescriptorHash> vertexToState;
@@ -142,7 +160,8 @@ auto main() -> int {
     auto startTime = 
         std::chrono::high_resolution_clock::now();
 
-    auto [pathFound, path] = 
+    
+    auto [pathFound, path, visitedNodes] = 
         bfs(graph,
             startVertex,
             vertexToState,
@@ -158,16 +177,30 @@ auto main() -> int {
     auto duration = 
     std::chrono::duration_cast<std::chrono::duration<double>>(endTime - startTime);
 
+    double directedness = pathFound ? static_cast<double>(path.size()) / visitedNodes : 0.0;
+
     if (pathFound) {
         std::println("Путь найден ({:.6f} сек):", duration.count());
-        if(log){
-            for (const auto& state : path) {
-                std::println("(A: {}, B: {})", state.first, state.second);
+        std::println("Длина пути: {}", path.size());
+        std::println("Посещено узлов: {}", visitedNodes);
+        std::println("Целенаправленность: {:.4f}", directedness);
+
+        if (log) {
+            std::ofstream dot_file("bfs_search_tree.dot");
+            if (dot_file.is_open()) {
+                boost::write_graphviz(dot_file, graph, VertexWriter{vertexToState});
+                dot_file.close();
+                std::println("\nГраф дерева перебора сохранен в файл bfs_search_tree.dot");
+                std::println("Для визуализации выполните в терминале:");
+                std::println("dot -Tpng bfs_search_tree.dot -o tree.png && feh tree.png");
+            } else {
+                std::cerr << "Ошибка: не удалось создать файл search_tree.dot\n";
             }
         }
     } else {
         std::println("Решение не найдено ({:.6f} сек).", duration.count());
     }
+    
 
     return 0;
 }
