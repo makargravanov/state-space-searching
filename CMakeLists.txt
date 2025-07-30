@@ -14,6 +14,7 @@ add_executable(main
     bfs.hpp
     ucs.hpp
     dfs.hpp
+    astar.hpp
 )
 
 set_property(TARGET main PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)

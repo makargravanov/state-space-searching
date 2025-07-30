@@ -10,6 +10,7 @@
 #include "bfs.hpp"
 #include "ucs.hpp"
 #include "dfs.hpp"
+#include "astar.hpp"
 
 auto main() -> int {
     int capacityA    = 4;
@@ -31,8 +32,8 @@ auto main() -> int {
     }
     std::println();
     
-    State initial(capacityA, 0);
-    
+    State initial(capacityA, 0); 
+
     // Запуск BFS
     {
         std::println("=== ЗАПУСК BFS ===");
@@ -195,6 +196,59 @@ auto main() -> int {
         std::println();
     }
     
+    // Запуск A*
+    {
+        std::println("=== ЗАПУСК A* ===");
+        Graph graph;
+        std::unordered_map<State, Graph::vertex_descriptor, StateHash> stateToVertex;
+        std::unordered_map<Graph::vertex_descriptor, State, VertexDescriptorHash> vertexToState;
+
+        Graph::vertex_descriptor startVertex = boost::add_vertex(graph);
+        stateToVertex[initial] = startVertex;
+        vertexToState[startVertex] = initial;
+
+        auto startTime = std::chrono::high_resolution_clock::now();
+
+        auto [pathFound, path, visitedNodes] = 
+            astar(graph,
+                startVertex,
+                vertexToState,
+                stateToVertex,
+                capacityA,
+                capacityB,
+                targetVolume
+            );
+
+        auto endTime = std::chrono::high_resolution_clock::now();
+        auto duration = 
+            std::chrono::duration_cast<std::chrono::duration<double>>(endTime - startTime);
+
+        double directedness = pathFound ? static_cast<double>(path.size()) / visitedNodes : 0.0;
+
+        if (pathFound) {
+            std::println("Путь найден ({:.6f} сек):", duration.count());
+            std::println("Длина пути: {}", path.size());
+            std::println("Посещено узлов: {}", visitedNodes);
+            std::println("Целенаправленность: {:.4f}", directedness);
+
+            if (log) {
+                std::string filename = "astar_search_tree.dot";
+                std::ofstream dot_file(filename);
+                if (dot_file.is_open()) {
+                    boost::write_graphviz(dot_file, graph, VertexWriter{vertexToState});
+                    dot_file.close();
+                    std::println("\nГраф дерева перебора сохранен в файл {}", filename);
+                    std::println("Для визуализации выполните в терминале:");
+                    std::println("dot -Tpng {} -o astar_tree.png && feh astar_tree.png", filename);
+                } else {
+                    std::cerr << "Ошибка: не удалось создать файл " << filename << "\n";
+                }
+            }
+        } else {
+            std::println("Решение не найдено ({:.6f} сек).", duration.count());
+        }
+        std::println();
+    }
 
     return 0;
 }
