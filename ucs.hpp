@@ -7,7 +7,7 @@
 struct CompareCost {
     bool operator()(const std::pair<int, Graph::vertex_descriptor>& a, 
                     const std::pair<int, Graph::vertex_descriptor>& b) const {
-        return a.first > b.first; // min-heap: наименьшая стоимость вверху
+        return a.first > b.first;
     }
 };
 
@@ -18,11 +18,9 @@ inline auto ucs(Graph& graph,
          int capacityA, int capacityB,
          int targetVolume) -> std::tuple<bool, std::vector<State>, uint32_t> {
 
-    // Приоритетная очередь: (стоимость, вершина)
     std::priority_queue<std::pair<int, Graph::vertex_descriptor>, 
                         std::vector<std::pair<int, Graph::vertex_descriptor>>,
                         CompareCost> queue;
-    
     queue.push({0, startVertex});
 
     std::unordered_map<Graph::vertex_descriptor, Graph::vertex_descriptor, VertexDescriptorHash> parent;
@@ -32,7 +30,7 @@ inline auto ucs(Graph& graph,
     costMap[startVertex] = 0;
 
     bool pathFound = false;
-    Graph::vertex_descriptor currentVertex;
+    Graph::vertex_descriptor targetVertex = boost::graph_traits<Graph>::null_vertex();
 
     std::vector<State> nextStates;
     nextStates.reserve(6);
@@ -43,7 +41,6 @@ inline auto ucs(Graph& graph,
         auto [currentCost, currentVertex] = queue.top();
         queue.pop();
         
-        // Если мы уже обработали эту вершину с меньшей стоимостью, пропускаем
         if (costMap.find(currentVertex) != costMap.end() && costMap[currentVertex] < currentCost) {
             continue;
         }
@@ -54,13 +51,14 @@ inline auto ucs(Graph& graph,
 
         if (currentState.first == targetVolume || currentState.second == targetVolume) {
             pathFound = true;
+            targetVertex = currentVertex;
             break;
         }
  
         generateNextStates(currentState, capacityA, capacityB, nextStates);
 
         for (const auto& nextState : nextStates) {
-            int nextCost = currentCost + 1; // Стоимость каждого шага = 1
+            int nextCost = currentCost + 1;
             
             if (stateToVertex.find(nextState) == stateToVertex.end()) {
                 Graph::vertex_descriptor newVertex = boost::add_vertex(graph);
@@ -73,7 +71,6 @@ inline auto ucs(Graph& graph,
             } else {
                 Graph::vertex_descriptor nextVertex = stateToVertex[nextState];
                 
-                // Если мы нашли путь с меньшей стоимостью, обновляем
                 if (costMap.find(nextVertex) == costMap.end() || nextCost < costMap[nextVertex]) {
                     parent[nextVertex] = currentVertex;
                     costMap[nextVertex] = nextCost;
@@ -85,7 +82,7 @@ inline auto ucs(Graph& graph,
 
     std::vector<State> path;
     if (pathFound) {
-        Graph::vertex_descriptor current = currentVertex;
+        Graph::vertex_descriptor current = targetVertex;
         while (current != boost::graph_traits<Graph>::null_vertex()) {
             path.push_back(vertexToState[current]);
             current = parent[current];
@@ -95,6 +92,5 @@ inline auto ucs(Graph& graph,
 
     return {pathFound, path, visitedNodes};
 }
-
 
 #endif

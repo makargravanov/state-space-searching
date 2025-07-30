@@ -14,9 +14,10 @@ add_executable(main
     bfs.hpp
     ucs.hpp
 )
-target_compile_options(main PRIVATE 
+target_compile_options(main PRIVATE
     -O3
     -mavx 
-    -funroll-loops )
+    -funroll-loops 
+)
 
 target_link_libraries(main PRIVATE ${Boost_LIBRARIES})
