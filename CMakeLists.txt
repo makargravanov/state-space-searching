@@ -13,11 +13,15 @@ add_executable(main
     common_functions.hpp
     bfs.hpp
     ucs.hpp
+    dfs.hpp
 )
+
+set_property(TARGET main PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+
 target_compile_options(main PRIVATE
     -O3
     -mavx 
-    -funroll-loops 
+    -funroll-loops
 )
 
 target_link_libraries(main PRIVATE ${Boost_LIBRARIES})
