@@ -1,7 +1,7 @@
 #ifndef ASTAR_HPP
 #define ASTAR_HPP
 
-#include "common_functions.hpp"
+#include "../misc/common_functions.hpp"
 #include <queue>
 #include <tuple>
 #include <cmath>

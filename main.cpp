@@ -7,11 +7,11 @@
 #include <vector>
 #include <numeric>
 
-#include "bfs.hpp"
-#include "types.hpp"
-#include "ucs.hpp"
-#include "dfs.hpp"
-#include "astar.hpp"
+#include "searches/bfs.hpp"
+#include "misc/types.hpp"
+#include "searches/ucs.hpp"
+#include "searches/dfs.hpp"
+#include "searches/astar.hpp"
 
 
 auto main() -> int {

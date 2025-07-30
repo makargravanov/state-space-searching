@@ -9,12 +9,14 @@ find_package(Boost REQUIRED COMPONENTS system graph)
 
 add_executable(main 
     main.cpp
-    types.hpp
-    common_functions.hpp
-    bfs.hpp
-    ucs.hpp
-    dfs.hpp
-    astar.hpp
+    
+    misc/types.hpp
+    misc/common_functions.hpp
+    
+    searches/bfs.hpp
+    searches/ucs.hpp
+    searches/dfs.hpp
+    searches/astar.hpp
 )
 
 set_property(TARGET main PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
