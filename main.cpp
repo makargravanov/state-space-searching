@@ -1,22 +1,25 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/breadth_first_search.hpp>
 #include <boost/functional/hash.hpp>
-#include <fstream>
 #include <boost/graph/graphviz.hpp>
 #include <iostream>
-#include <chrono>
 #include <print>
+#include <vector>
+#include <numeric>
 
 #include "bfs.hpp"
+#include "types.hpp"
 #include "ucs.hpp"
 #include "dfs.hpp"
 #include "astar.hpp"
 
+
 auto main() -> int {
-    int capacityA    = 4;
-    int capacityB    = 3;
+    int capacityA = 4;
+    int capacityB = 3;
     int targetVolume = 2;
-    bool log         = false;
+    bool log = false;
+    bool benchmark = false;
     
     std::print("Введите емкость сосуда A: ");
     std::cin >> capacityA;
@@ -24,230 +27,77 @@ auto main() -> int {
     std::cin >> capacityB;
     std::print("Введите целевой объем: ");
     std::cin >> targetVolume;
+    
     std::print("Логи (y/n): ");
     char logc = 'n';
     std::cin >> logc;
-    if(logc == 'y') {
+    if (logc == 'y') {
         log = true;
     }
+    
+    std::print("Бенчмарк (y/n): ");
+    char benchc = 'n';
+    std::cin >> benchc;
+    if (benchc == 'y') {
+        benchmark = true;
+    }
     std::println();
-    
-    State initial(capacityA, 0); 
 
-    // Запуск BFS
-    {
-        std::println("=== ЗАПУСК BFS ===");
-        Graph graph;
-        std::unordered_map<State, Graph::vertex_descriptor, StateHash> stateToVertex;
-        std::unordered_map<Graph::vertex_descriptor, State, VertexDescriptorHash> vertexToState;
+    State initial(capacityA, 0);
 
-        Graph::vertex_descriptor startVertex = boost::add_vertex(graph);
-        stateToVertex[initial] = startVertex;
-        vertexToState[startVertex] = initial;
+    // Списки алгоритмов и их имен
+    std::vector<AlgorithmFunction> algorithms = {bfs, ucs, dfs, astar};
+    std::vector<std::string> algoNames = {"bfs", "ucs", "dfs", "astar"};
+    std::vector<std::string> displayNames = {"BFS", "UCS", "DFS", "A*"};
 
-        auto startTime = std::chrono::high_resolution_clock::now();
+    if (benchmark) {
+        std::vector<std::vector<double>> allTimes(algorithms.size());
+        bool allRunsSuccessful = true;
 
-        auto [pathFound, path, visitedNodes] = 
-            bfs(graph,
-                startVertex,
-                vertexToState,
-                stateToVertex,
-                capacityA,
-                capacityB,
-                targetVolume
-            );
+        for (int run = 0; run < 10; ++run) {
+            for (size_t i = 0; i < algorithms.size(); ++i) {
+                auto [success, time, pathLen, visited] = runAlgorithm(
+                    algorithms[i],
+                    algoNames[i],
+                    initial,
+                    capacityA,
+                    capacityB,
+                    targetVolume,
+                    false,  // Для бенчмарка логи отключить надо
+                    true // Вообще все логи убираем (тихий режим)
+                );
 
-        auto endTime = std::chrono::high_resolution_clock::now();
-        auto duration = 
-            std::chrono::duration_cast<std::chrono::duration<double>>(endTime - startTime);
-
-        double directedness = pathFound ? static_cast<double>(path.size()) / visitedNodes : 0.0;
-
-        if (pathFound) {
-            std::println("Путь найден ({:.6f} сек):", duration.count());
-            std::println("Длина пути: {}", path.size());
-            std::println("Посещено узлов: {}", visitedNodes);
-            std::println("Целенаправленность: {:.4f}", directedness);
-
-            if (log) {
-                std::string filename = "bfs_search_tree.dot";
-                std::ofstream dot_file(filename);
-                if (dot_file.is_open()) {
-                    boost::write_graphviz(dot_file, graph, VertexWriter{vertexToState});
-                    dot_file.close();
-                    std::println("\nГраф дерева перебора сохранен в файл {}", filename);
-                    std::println("Для визуализации выполните в терминале:");
-                    std::println("dot -Tpng {} -o bfs_tree.png && feh bfs_tree.png", filename);
-                } else {
-                    std::cerr << "Ошибка: не удалось создать файл " << filename << "\n";
+                if (!success) {
+                    allRunsSuccessful = false;
+                    std::println("Ошибка: алгоритм {} не нашел путь в прогоне {}", displayNames[i], run + 1);
                 }
+                allTimes[i].push_back(time);
+            }
+        }
+
+        if (allRunsSuccessful) {
+            std::println("=== ОТЧЕТ БЕНЧМАРКА ===");
+            for (size_t i = 0; i < algorithms.size(); ++i) {
+                double avgTime = std::accumulate(allTimes[i].begin(), allTimes[i].end(), 0.0) / allTimes[i].size();
+                std::println("{}: среднее время = {:.6f} сек", displayNames[i], avgTime);
             }
         } else {
-            std::println("Решение не найдено ({:.6f} сек).", duration.count());
+            std::println("Бенчмарк не может быть завершен: не все прогоны были успешными");
         }
-        std::println();
-    }
-    
-    // Запуск UCS
-    {
-        std::println("=== ЗАПУСК UCS ===");
-        Graph graph;
-        std::unordered_map<State, Graph::vertex_descriptor, StateHash> stateToVertex;
-        std::unordered_map<Graph::vertex_descriptor, State, VertexDescriptorHash> vertexToState;
-
-        Graph::vertex_descriptor startVertex = boost::add_vertex(graph);
-        stateToVertex[initial] = startVertex;
-        vertexToState[startVertex] = initial;
-
-        auto startTime = std::chrono::high_resolution_clock::now();
-
-        auto [pathFound, path, visitedNodes] = 
-            ucs(graph,
-                startVertex,
-                vertexToState,
-                stateToVertex,
+    } else {
+        for (size_t i = 0; i < algorithms.size(); ++i) {
+            std::println("=== ЗАПУСК {} ===", displayNames[i]);
+            runAlgorithm(
+                algorithms[i],
+                algoNames[i],
+                initial,
                 capacityA,
                 capacityB,
-                targetVolume
+                targetVolume,
+                log,
+                false
             );
-
-        auto endTime = std::chrono::high_resolution_clock::now();
-        auto duration = 
-            std::chrono::duration_cast<std::chrono::duration<double>>(endTime - startTime);
-
-        double directedness = pathFound ? static_cast<double>(path.size()) / visitedNodes : 0.0;
-
-        if (pathFound) {
-            std::println("Путь найден ({:.6f} сек):", duration.count());
-            std::println("Длина пути: {}", path.size());
-            std::println("Посещено узлов: {}", visitedNodes);
-            std::println("Целенаправленность: {:.4f}", directedness);
-
-            if (log) {
-                std::string filename = "ucs_search_tree.dot";
-                std::ofstream dot_file(filename);
-                if (dot_file.is_open()) {
-                    boost::write_graphviz(dot_file, graph, VertexWriter{vertexToState});
-                    dot_file.close();
-                    std::println("\nГраф дерева перебора сохранен в файл {}", filename);
-                    std::println("Для визуализации выполните в терминале:");
-                    std::println("dot -Tpng {} -o ucs_tree.png && feh ucs_tree.png", filename);
-                } else {
-                    std::cerr << "Ошибка: не удалось создать файл " << filename << "\n";
-                }
-            }
-        } else {
-            std::println("Решение не найдено ({:.6f} сек).", duration.count());
         }
-        std::println();
-    }
-
-    // Запуск DFS
-    {
-        std::println("=== ЗАПУСК DFS ===");
-        Graph graph;
-        std::unordered_map<State, Graph::vertex_descriptor, StateHash> stateToVertex;
-        std::unordered_map<Graph::vertex_descriptor, State, VertexDescriptorHash> vertexToState;
-
-        Graph::vertex_descriptor startVertex = boost::add_vertex(graph);
-        stateToVertex[initial] = startVertex;
-        vertexToState[startVertex] = initial;
-
-        auto startTime = std::chrono::high_resolution_clock::now();
-
-        auto [pathFound, path, visitedNodes] = 
-            dfs(graph,
-                startVertex,
-                vertexToState,
-                stateToVertex,
-                capacityA,
-                capacityB,
-                targetVolume
-            );
-
-        auto endTime = std::chrono::high_resolution_clock::now();
-        auto duration = 
-            std::chrono::duration_cast<std::chrono::duration<double>>(endTime - startTime);
-
-        double directedness = pathFound ? static_cast<double>(path.size()) / visitedNodes : 0.0;
-
-        if (pathFound) {
-            std::println("Путь найден ({:.6f} сек):", duration.count());
-            std::println("Длина пути: {}", path.size());
-            std::println("Посещено узлов: {}", visitedNodes);
-            std::println("Целенаправленность: {:.4f}", directedness);
-
-            if (log) {
-                std::string filename = "dfs_search_tree.dot";
-                std::ofstream dot_file(filename);
-                if (dot_file.is_open()) {
-                    boost::write_graphviz(dot_file, graph, VertexWriter{vertexToState});
-                    dot_file.close();
-                    std::println("\nГраф дерева перебора сохранен в файл {}", filename);
-                    std::println("Для визуализации выполните в терминале:");
-                    std::println("dot -Tpng {} -o dfs_tree.png && feh dfs_tree.png", filename);
-                } else {
-                    std::cerr << "Ошибка: не удалось создать файл " << filename << "\n";
-                }
-            }
-        } else {
-            std::println("Решение не найдено ({:.6f} сек).", duration.count());
-        }
-        std::println();
-    }
-    
-    // Запуск A*
-    {
-        std::println("=== ЗАПУСК A* ===");
-        Graph graph;
-        std::unordered_map<State, Graph::vertex_descriptor, StateHash> stateToVertex;
-        std::unordered_map<Graph::vertex_descriptor, State, VertexDescriptorHash> vertexToState;
-
-        Graph::vertex_descriptor startVertex = boost::add_vertex(graph);
-        stateToVertex[initial] = startVertex;
-        vertexToState[startVertex] = initial;
-
-        auto startTime = std::chrono::high_resolution_clock::now();
-
-        auto [pathFound, path, visitedNodes] = 
-            astar(graph,
-                startVertex,
-                vertexToState,
-                stateToVertex,
-                capacityA,
-                capacityB,
-                targetVolume
-            );
-
-        auto endTime = std::chrono::high_resolution_clock::now();
-        auto duration = 
-            std::chrono::duration_cast<std::chrono::duration<double>>(endTime - startTime);
-
-        double directedness = pathFound ? static_cast<double>(path.size()) / visitedNodes : 0.0;
-
-        if (pathFound) {
-            std::println("Путь найден ({:.6f} сек):", duration.count());
-            std::println("Длина пути: {}", path.size());
-            std::println("Посещено узлов: {}", visitedNodes);
-            std::println("Целенаправленность: {:.4f}", directedness);
-
-            if (log) {
-                std::string filename = "astar_search_tree.dot";
-                std::ofstream dot_file(filename);
-                if (dot_file.is_open()) {
-                    boost::write_graphviz(dot_file, graph, VertexWriter{vertexToState});
-                    dot_file.close();
-                    std::println("\nГраф дерева перебора сохранен в файл {}", filename);
-                    std::println("Для визуализации выполните в терминале:");
-                    std::println("dot -Tpng {} -o astar_tree.png && feh astar_tree.png", filename);
-                } else {
-                    std::cerr << "Ошибка: не удалось создать файл " << filename << "\n";
-                }
-            }
-        } else {
-            std::println("Решение не найдено ({:.6f} сек).", duration.count());
-        }
-        std::println();
     }
 
     return 0;

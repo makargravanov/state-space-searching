@@ -40,4 +40,12 @@ struct VertexWriter {
     }
 };
 
+using AlgorithmFunction = std::tuple<bool, std::vector<State>, uint32_t> (*)(
+    Graph&,
+    Graph::vertex_descriptor,
+    std::unordered_map<Graph::vertex_descriptor, State, VertexDescriptorHash>&,
+    std::unordered_map<State, Graph::vertex_descriptor, StateHash>&,
+    int, int, int
+);
+
 #endif
