@@ -66,6 +66,13 @@ inline std::tuple<bool, double, size_t, uint32_t> runAlgorithm(
             if (log) {
                 std::string filename = algoName + "_search_tree.dot";
                 std::ofstream dot_file(filename);
+
+                std::println("Путь: ");
+                for (const auto& e : path) {
+                    std::println("{}", e);
+                }
+                std::println(" ");
+
                 if (dot_file.is_open()) {
                     boost::write_graphviz(dot_file, graph, VertexWriter{vertexToState});
                     dot_file.close();
