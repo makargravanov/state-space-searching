@@ -3,7 +3,6 @@
 #include <boost/functional/hash.hpp>
 #include <boost/graph/graphviz.hpp>
 #include <iostream>
-#include <print>
 #include <vector>
 #include <numeric>
 
@@ -13,6 +12,8 @@
 #include "searches/dfs.hpp"
 #include "searches/astar.hpp"
 
+#include <iomanip>
+
 
 auto main() -> int {
     int capacityA = 4;
@@ -21,27 +22,27 @@ auto main() -> int {
     bool log = false;
     bool benchmark = false;
     
-    std::print("Введите емкость сосуда A: ");
+    std::cout << "Введите емкость сосуда A: ";
     std::cin >> capacityA;
-    std::print("Введите емкость сосуда B: ");
+    std::cout << "Введите емкость сосуда B: ";
     std::cin >> capacityB;
-    std::print("Введите целевой объем: ");
+    std::cout << "Введите целевой объем: ";
     std::cin >> targetVolume;
     
-    std::print("Логи (y/n): ");
+    std::cout << "Логи (y/n): ";
     char logc = 'n';
     std::cin >> logc;
     if (logc == 'y') {
         log = true;
     }
     
-    std::print("Бенчмарк (y/n): ");
+    std::cout << "Бенчмарк (y/n): ";
     char benchc = 'n';
     std::cin >> benchc;
     if (benchc == 'y') {
         benchmark = true;
     }
-    std::println();
+    std::cout << "\n";
 
     State initial(capacityA, 0);
 
@@ -56,7 +57,7 @@ auto main() -> int {
 
         for (int run = 0; run < 10; ++run) {
             for (size_t i = 0; i < algorithms.size(); ++i) {
-                auto [success, time, pathLen, visited] = runAlgorithm(
+                auto [success, time, pathLen, visited] =                 runAlgorithm(
                     algorithms[i],
                     algoNames[i],
                     initial,
@@ -69,24 +70,26 @@ auto main() -> int {
 
                 if (!success) {
                     allRunsSuccessful = false;
-                    std::println("Ошибка: алгоритм {} не нашел путь в прогоне {}", displayNames[i], run + 1);
+                    std::cout << "Ошибка: алгоритм " << displayNames[i] << "не нашел путь в прогоне " <<  (run + 1) << "\n";
                 }
                 allTimes[i].push_back(time);
             }
         }
 
         if (allRunsSuccessful) {
-            std::println("=== ОТЧЕТ БЕНЧМАРКА ===");
+            std::cout << "=== ОТЧЕТ БЕНЧМАРКА === \n";
             for (size_t i = 0; i < algorithms.size(); ++i) {
                 double avgTime = std::accumulate(allTimes[i].begin(), allTimes[i].end(), 0.0) / allTimes[i].size();
-                std::println("{}: среднее время = {:.6f} сек", displayNames[i], avgTime);
+                std::cout << displayNames[i] << ": среднее время = " 
+                      << std::fixed << std::setprecision(6) 
+                      << avgTime << " сек" << std::endl;
             }
         } else {
-            std::println("Бенчмарк не может быть завершен: не все прогоны были успешными");
+            std::cout << "Бенчмарк не может быть завершен: не все прогоны были успешными" << std::endl;
         }
     } else {
         for (size_t i = 0; i < algorithms.size(); ++i) {
-            std::println("=== ЗАПУСК {} ===", displayNames[i]);
+            std::cout << "=== ЗАПУСК " << displayNames[i] << " ===" << std::endl;
             runAlgorithm(
                 algorithms[i],
                 algoNames[i],

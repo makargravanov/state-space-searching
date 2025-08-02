@@ -2,7 +2,6 @@
 #define COMMON_FUNCTIONS_HPP
 
 #include "types.hpp"
-#include <print>
 
 inline auto generateNextStates(const State& current,
                         int capacityA,
@@ -58,35 +57,37 @@ inline std::tuple<bool, double, size_t, uint32_t> runAlgorithm(
 
     if (!silent) {
         if (pathFound) {
-            std::println("Путь найден ({:.6f} сек):", time);
-            std::println("Длина пути: {}", path.size());
-            std::println("Посещено узлов: {}", visitedNodes);
-            std::println("Целенаправленность: {:.4f}", static_cast<double>(path.size()) / visitedNodes);
+            std::cout << "Путь найден (" << std::fixed << std::setprecision(6) << time << " сек):" << std::endl;
+            std::cout << "Длина пути: " << path.size() << std::endl;
+            std::cout << "Посещено узлов: " << visitedNodes << std::endl;
+            std::cout << "Целенаправленность: " << std::fixed << std::setprecision(4) 
+                      << static_cast<double>(path.size()) / visitedNodes << std::endl;
 
             if (log) {
                 std::string filename = algoName + "_search_tree.dot";
                 std::ofstream dot_file(filename);
 
-                std::println("Путь: ");
-                for (const auto& e : path) {
-                    std::println("{}", e);
+                std::cout << "Путь: " << std::endl;
+                for (auto& e : path) {
+                    std::cout << "{"<< e.first << ", " << e.second << "}" << std::endl;
                 }
-                std::println(" ");
+                std::cout << std::endl;
 
                 if (dot_file.is_open()) {
                     boost::write_graphviz(dot_file, graph, VertexWriter{vertexToState});
                     dot_file.close();
-                    std::println("\nГраф дерева перебора сохранен в файл {}", filename);
-                    std::println("Для визуализации выполните в терминале:");
-                    std::println("dot -Tpng {} -o {}_tree.png && feh {}_tree.png", filename, algoName, algoName);
+                    std::cout << "\nГраф дерева перебора сохранен в файл " << filename << std::endl;
+                    std::cout << "Для визуализации выполните в терминале:" << std::endl;
+                    std::cout << "dot -Tpng " << filename << " -o " << algoName << "_tree.png && feh " 
+                              << algoName << "_tree.png" << std::endl;
                 } else {
                     std::cerr << "Ошибка: не удалось создать файл " << filename << "\n";
                 }
             }
         } else {
-            std::println("Решение не найдено ({:.6f} сек).", time);
+            std::cout << "Решение не найдено (" << std::fixed << std::setprecision(6) << time << " сек)." << std::endl;
         }
-        std::println();
+        std::cout << std::endl;
     }
 
     return {pathFound, time, path.size(), visitedNodes};
